@@ -4,30 +4,35 @@
 [
   (line_comment)
   (block_comment)
-] @comment
+] @comment @spell
 
-(xml_doc) @comment.documentation
+((line_comment) @comment.documentation @spell
+ (#not-match? @comment.documentation "^///"))
 
-((const) @constant
- (#set! "priority" 90))
-
-((identifier) @variable
- (#set! "priority" 90))
+(const
+  [
+   (_) @constant
+   (unit) @constant.builtin
+  ])
 
 (primary_constr_args (_) @variable.parameter)
 
-((identifier_pattern (long_identifier (identifier) @character.special))
- (#match? @character.special "^\_.*")
- (#set! "priority" 90))
+(class_as_reference
+  (_) @variable.parameter.builtin)
+
+
+((argument_patterns (long_identifier (identifier) @character.special))
+ (#match? @character.special "^\_.*"))
 
 ;; ----------------------------------------------------------------------------
 ;; Punctuation
 
-(wildcard_pattern) @character.special
-
 (type_name type_name: (_) @type.definition)
 
-(type) @type
+[
+ (_type)
+ (atomic_type)
+] @type
 
 (member_signature
   .
@@ -38,26 +43,25 @@
       (argument_spec
         (argument_name_spec
           "?"? @character.special
-          name: (_) @variable.parameter)
-        (_) @type))))
+          name: (_) @variable.parameter)))))
 
-[
-  (union_type_case)
-] @type
+(union_type_case (identifier) @constant)
 
 (rules
   (rule
-    [
-      (type_check_pattern (_) @type)
-      (identifier_pattern (long_identifier) . (long_identifier) @variable)
-      (_ (identifier_pattern (long_identifier) . (long_identifier) @variable))
-      (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable)))
-      (_ (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable))))
-      (_ (_ (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable)))))
-      (_ (_ (_ (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable))))))
-      (_ (_ (_ (_ (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable)))))))
-      (_ (_ (_ (_ (_ (_ (_ (identifier_pattern (long_identifier) . (long_identifier) @variable))))))))
-    ]))
+    pattern: (_) @constant
+    block: (_)))
+
+(wildcard_pattern) @character.special
+
+(identifier_pattern
+  .
+  (_) @constant
+  .
+  (_) @variable)
+
+(optional_pattern
+  "?" @character.special)
 
 (fsi_directive_decl . (string) @module)
 
@@ -82,18 +86,15 @@
     .
     (identifier) @property))
 
-(dot_expression
-  base: (_) @variable
-  field: (_) @variable.member)
-
 (value_declaration_left . (_) @variable)
 
 (function_declaration_left
-  . (_) @function
-  [
-    (argument_patterns)
-    (argument_patterns (long_identifier (identifier)))
-  ] @variable.parameter)
+  . (_) @function)
+
+(argument_patterns) @variable.parameter
+(typed_pattern
+  (_pattern) @variable.parameter
+  (_type) @type)
 
 (member_defn
   (method_or_prop_defn
@@ -103,28 +104,20 @@
         instance: (identifier) @variable.parameter.builtin
         method: (identifier) @function.method)
     ]
-    args: (_)? @variable.parameter))
+    args: (_)* @variable.parameter))
+
+
+(dot_expression
+  .
+  (_) @variable.member
+  .
+  (_))
 
 (application_expression
   .
-  [
-    (_) @function.call
-    (long_identifier_or_op (long_identifier (identifier) (identifier) @function.call))
-    (typed_expression . (long_identifier_or_op (long_identifier (identifier)* . (identifier) @function.call)))
-  ]
+  (_) @function.call
   .
-  (_)? @variable)
-
-(application_expression
-  .
-  [
-    (dot_expression base: (_) @variable.member field: (_) @function.call)
-    (_ (dot_expression base: (_) @variable.member field: (_) @function.call))
-    (_ (_ (dot_expression base: (_) @variable.member field: (_) @function.call)))
-    (_ (_ (_ (dot_expression base: (_) @variable.member field: (_) @function.call))))
-    (_ (_ (_ (_ (dot_expression base: (_) @variable.member field: (_) @function.call)))))
-    (_ (_ (_ (_ (_ (dot_expression base: (_) @variable.member field: (_) @function.call))))))
-  ])
+  (_) @variable)
 
 ((infix_expression
   .
@@ -148,13 +141,8 @@
  (#eq? @operator "<|")
  )
 
-(typecast_expression
-  .
-  (_) @variable
-  .
-  (_) @type)
-
 [
+  (xint)
   (int)
   (int16)
   (uint16)
@@ -184,7 +172,12 @@
 
 (compiler_directive_decl) @keyword.directive
 
-(attribute) @attribute
+(preproc_line
+  "#line" @keyword.directive)
+
+(attribute
+  target: (identifier)? @keyword
+  (_type) @attribute)
 
 [
   "("
@@ -197,9 +190,12 @@
   "|]"
   "{|"
   "|}"
+] @punctuation.bracket
+
+[
   "[<"
   ">]"
-] @punctuation.bracket
+] @punctuation.special
 
 (format_string_eval
   [
@@ -210,6 +206,8 @@
 [
   ","
   ";"
+  ":"
+  "."
 ] @punctuation.delimiter
 
 [
@@ -220,11 +218,24 @@
   "-"
   "~"
   "->"
+  "<-"
+  "&"
   "&&"
+  "|"
   "||"
+  ":>"
+  ":?>"
+  ".."
   (infix_op)
   (prefix_op)
+  (op_identifier)
 ] @operator
+
+(generic_type
+  [
+   "<"
+   ">"
+  ] @punctuation.bracket)
 
 [
   "if"
@@ -234,7 +245,6 @@
   "when"
   "match"
   "match!"
-  "then"
 ] @keyword.conditional
 
 [
@@ -291,13 +301,13 @@
   "type"
   "inherit"
   "interface"
+  "and"
+  "class"
+  "struct"
 ] @keyword.type
 
-[
-  "try"
-  "with"
-  "finally"
-] @keyword.exception
+((identifier) @keyword.exception
+ (#any-of? @keyword.exception "failwith" "failwithf" "raise" "reraise"))
 
 [
   "as"
@@ -309,41 +319,36 @@
   "in"
   "do"
   "do!"
-  "event"
-  "field"
   "fun"
   "function"
   "get"
   "set"
   "lazy"
   "new"
-  "null"
   "of"
-  "param"
-  "property"
   "struct"
   "val"
   "module"
   "namespace"
+  "with"
 ] @keyword
 
-(long_identifier
-  ((identifier)* @module)
-  .
-  ((identifier)))
+[
+  "null"
+] @constant.builtin
 
-((long_identifier
-  (identifier)*
-  .
-  (identifier) @property)
- (#set! "priority" 91))
+(match_expression "with" @keyword.conditional)
 
-((type
+(try_expression
+  [
+    "try"
+    "with"
+    "finally"
+  ] @keyword.exception)
+
+((_type
   (long_identifier (identifier) @type.builtin))
  (#any-of? @type.builtin "bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint" "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit"))
-
-(const
-  (unit) @constant)
 
 (preproc_if
   [
@@ -355,8 +360,22 @@
 (preproc_else
   "#else" @keyword.directive)
 
-(long_identifier_or_op
-  (op_identifier) @operator)
+((long_identifier
+  (identifier)+ @variable.member
+  .
+  (identifier)))
 
 ((identifier) @module.builtin
- (#any-of? @module.builtin "Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" ))
+ (#any-of? @module.builtin "Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" "Result" ))
+
+((value_declaration
+   (attributes
+     (attribute
+       (_type
+         (long_identifier
+           (identifier) @attribute))))
+   (function_or_value_defn
+     (value_declaration_left
+       .
+       (_) @constant)))
+ (#eq? @attribute "Literal"))

@@ -1,7 +1,7 @@
 id = "fsharp"
 name = "F#"
 description = "F# language support for Zed"
-version = "0.0.5"
+version = "0.0.6"
 schema_version = 1
 authors = ["Nathan Collins <nathjcollins@gmail.com>"]
 repository = "https://github.com/nathanjcollins/zed-fsharp"
@@ -12,4 +12,4 @@ language = "FSharp"
 
 [grammars.fsharp]
 repository = "https://github.com/ionide/tree-sitter-fsharp"
-commit = "c4347939b4fb439771dc2561a6923fba6a78251b"
+commit = "f29605148f24199cf4d9c4a203a5debc0cbcc648"
