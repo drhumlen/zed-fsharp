@@ -4,10 +4,10 @@
 [
   (line_comment)
   (block_comment)
-] @comment @spell
+] @comment
 
-((line_comment) @comment.documentation @spell
- (#not-match? @comment.documentation "^///"))
+((line_comment) @comment.documentation
+ (#match? @comment.documentation "^///"))
 
 (const
   [
@@ -19,7 +19,6 @@
 
 (class_as_reference
   (_) @variable.parameter.builtin)
-
 
 ((argument_patterns (long_identifier (identifier) @character.special))
  (#match? @character.special "^\_.*"))
@@ -106,7 +105,6 @@
     ]
     args: (_)* @variable.parameter))
 
-
 (dot_expression
   .
   (_) @variable.member
@@ -117,7 +115,7 @@
   .
   (_) @function.call
   .
-  (_) @variable)
+  (_)? @variable)
 
 ((infix_expression
   .
@@ -168,7 +166,7 @@
   (triple_quoted_string)
   (verbatim_string)
   (char)
-] @spell @string)
+] @string)
 
 (compiler_directive_decl) @keyword.directive
 
