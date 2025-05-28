@@ -302,7 +302,7 @@
   "and"
   "class"
   "struct"
-] @keyword.type
+] @keyword ;.type
 
 ((identifier) @keyword.exception
  (#any-of? @keyword.exception "failwith" "failwithf" "raise" "reraise"))
@@ -344,9 +344,9 @@
     "finally"
   ] @keyword.exception)
 
-((_type
-  (long_identifier (identifier) @type.builtin))
- (#any-of? @type.builtin "bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint" "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit"))
+; ((_type
+;   (long_identifier (identifier) @type.builtin))
+;  (#any-of? @type.builtin "bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint" "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit"))
 
 (preproc_if
   [
@@ -363,8 +363,8 @@
   .
   (identifier)))
 
-((identifier) @module.builtin
- (#any-of? @module.builtin "Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" "Result" ))
+; ((identifier) @module.builtin
+;  (#any-of? @module.builtin "Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" "Result" ))
 
 ((value_declaration
    (attributes
