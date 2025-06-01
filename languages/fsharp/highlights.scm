@@ -117,6 +117,15 @@
   .
   (_)? @variable)
 
+(application_expression
+    (dot_expression base: (_) @variable.member . field: (_) @function.call)
+  )
+(application_expression
+    (typed_expression
+      (dot_expression base: (_) @variable.member . field: (_) @function.call)
+      )
+  )
+
 ((infix_expression
   .
   (_)
