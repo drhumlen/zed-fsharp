@@ -1,6 +1,6 @@
 ; Modules
 (module_defn
-  .
+  "module" @context
   (identifier) @name) @item
 
 ; Function bindings
@@ -30,4 +30,12 @@
     .
     (property_or_ident) @name)) @item
 
-(type_name type_name: (_) @name) @item
+(type_definition
+  "type" @context
+  (record_type_defn
+    (type_name) @name)) @item
+
+(type_definition
+  "type" @context
+  (anon_type_defn
+    (type_name) @name)) @item
