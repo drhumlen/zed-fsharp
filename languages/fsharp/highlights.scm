@@ -228,7 +228,6 @@
   "<-"
   "&"
   "&&"
-  "|"
   "||"
   ":>"
   ":?>"
@@ -255,7 +254,6 @@
 ] @keyword.conditional
 
 [
-  "and"
   "or"
   "not"
   "upcast"
@@ -333,7 +331,6 @@
   "lazy"
   "new"
   "of"
-  "struct"
   "val"
   "module"
   "namespace"

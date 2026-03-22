@@ -9,10 +9,6 @@
     .
     (identifier) @name)) @item
 
-(function_or_value_defn
-  (value_declaration_left
-    (identifier_pattern) @name)) @item
-
 ; Record fields
 ;(record_field
 ;  .
@@ -38,4 +34,9 @@
 (type_definition
   "type" @context
   (anon_type_defn
+    (type_name) @name)) @item
+
+(type_definition
+  "type" @context
+  (union_type_defn
     (type_name) @name)) @item

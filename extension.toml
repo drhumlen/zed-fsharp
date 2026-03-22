@@ -13,3 +13,4 @@ language = "FSharp"
 [grammars.fsharp]
 repository = "https://github.com/ionide/tree-sitter-fsharp"
 commit = "f29605148f24199cf4d9c4a203a5debc0cbcc648"
+path = "fsharp"
