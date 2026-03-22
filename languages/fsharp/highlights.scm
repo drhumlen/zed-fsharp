@@ -128,7 +128,7 @@
 
 ((infix_expression
   .
-  (_)
+  (long_identifier_or_op) @variable
   .
   (infix_op) @operator
   .
