@@ -7,6 +7,9 @@ struct FsharpExtension {}
 #[serde(rename_all = "PascalCase")]
 struct FsAutocompleteInitOptions {
     automatic_workspace_init: bool,
+    analyze_unused_declarations: bool,
+    unused_declarations_analyzer: bool,
+    simplify_name_analyzer: bool,
 }
 
 impl zed::Extension for FsharpExtension {
@@ -40,6 +43,9 @@ impl zed::Extension for FsharpExtension {
     ) -> zed::Result<Option<zed::serde_json::Value>> {
         let initialization_options = FsAutocompleteInitOptions {
             automatic_workspace_init: true,
+            analyze_unused_declarations: true,
+            unused_declarations_analyzer: true,
+            simplify_name_analyzer: true,
         };
 
         Ok(Some(serde_json::json!(initialization_options)))
