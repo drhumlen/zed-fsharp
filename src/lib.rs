@@ -7,7 +7,6 @@ use zed_extension_api::{
 };
 
 mod fsac;
-use fsac::{acquire_fsac, FsacAcquisition};
 
 struct FsharpExtension {}
 
@@ -33,30 +32,19 @@ fn get_custom_args(settings_object: Option<&Map<String, Value>>) -> Vec<String> 
     }
 }
 
-fn get_fsac_acquisition(
-    settings_object: Option<&Map<String, Value>>,
-    worktree: &zed::Worktree,
+fn require_dotnet(
     language_server_id: &zed::LanguageServerId,
-    custom_args: &Vec<String>,
-) -> zed::Result<FsacAcquisition> {
-    if let Some(custom_path) = settings_object
-        .and_then(|s| s.get("fsac_custom_path"))
-        .and_then(|v| v.as_str())
-    {
-        Ok(FsacAcquisition {
-            fsac_path: PathBuf::from(custom_path),
-            env: Default::default(),
-        })
-    } else {
-        match acquire_fsac(language_server_id, worktree, custom_args) {
-            Ok(acquisition) => Ok(acquisition),
-            Err(e) => {
-                zed::set_language_server_installation_status(
-                    language_server_id,
-                    &LanguageServerInstallationStatus::Failed(e.clone()),
-                );
-                Err(e)
-            }
+    worktree: &zed::Worktree,
+) -> zed::Result<String> {
+    match worktree.which("dotnet") {
+        Some(p) => Ok(p),
+        None => {
+            let error_msg = "dotnet executable not found in PATH".to_string();
+            zed::set_language_server_installation_status(
+                language_server_id,
+                &LanguageServerInstallationStatus::Failed(error_msg.clone()),
+            );
+            Err(error_msg)
         }
     }
 }
@@ -81,31 +69,48 @@ impl zed::Extension for FsharpExtension {
         language_server_id: &zed::LanguageServerId,
         worktree: &zed::Worktree,
     ) -> zed::Result<zed::Command> {
-        let dotnet_path = match worktree.which("dotnet") {
-            Some(p) => p,
-            None => {
-                let error_msg = "dotnet executable not found in PATH".to_string();
-                zed::set_language_server_installation_status(
-                    language_server_id,
-                    &LanguageServerInstallationStatus::Failed(error_msg.clone()),
-                );
-                return Err(error_msg);
-            }
-        };
-
         let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?.settings;
         let settings_object = settings.as_ref().and_then(|v| v.as_object());
-
         let custom_args = get_custom_args(settings_object);
-        let acquisition = get_fsac_acquisition(
-            settings_object,
-            worktree,
-            language_server_id,
-            &custom_args,
-        )?;
 
+        // Explicit .dll path via settings — always run via dotnet
+        if let Some(custom_path) = settings_object
+            .and_then(|s| s.get("fsac_custom_path"))
+            .and_then(|v| v.as_str())
+        {
+            let dotnet_path = require_dotnet(language_server_id, worktree)?;
+            let final_args = get_final_args(PathBuf::from(custom_path), &custom_args);
+            return Ok(zed::Command {
+                command: dotnet_path,
+                args: final_args,
+                env: worktree.shell_env(),
+            });
+        }
+
+        // fsautocomplete binary found in shell PATH — run directly
+        if let Some(fsac_path) = worktree.which("fsautocomplete") {
+            let mut args = custom_args.clone();
+            args.push("--adaptive-lsp-server-enabled".to_string());
+            return Ok(zed::Command {
+                command: fsac_path,
+                args,
+                env: worktree.shell_env(),
+            });
+        }
+
+        // Fall back to downloading via NuGet and running via dotnet
+        let dotnet_path = require_dotnet(language_server_id, worktree)?;
+        let acquisition = match fsac::acquire_fsac(language_server_id, worktree, &custom_args) {
+            Ok(a) => a,
+            Err(e) => {
+                zed::set_language_server_installation_status(
+                    language_server_id,
+                    &LanguageServerInstallationStatus::Failed(e.clone()),
+                );
+                return Err(e);
+            }
+        };
         let final_args = get_final_args(acquisition.fsac_path, &custom_args);
-
         Ok(zed::Command {
             command: dotnet_path,
             args: final_args,
