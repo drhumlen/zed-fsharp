@@ -3,8 +3,12 @@ name = "F#"
 description = "F# language support for Zed"
 version = "0.1.9"
 schema_version = 1
-authors = ["Nathan Collins <nathjcollins@gmail.com>"]
+authors = ["Nathan Collins <me@nathancollins.dev>"]
 repository = "https://github.com/nathanjcollins/zed-fsharp"
+
+[settings]
+fsac_custom_path = { type = "string", optional = true, description = "Custom path to fsautocomplete binary" }
+fsac_custom_arguments = { type = "array", items = "string", default = [], description = "Additional arguments for fsautocomplete" }
 
 [language_servers.fsautocomplete]
 name = "fsautocomplete"
@@ -14,3 +18,8 @@ language = "FSharp"
 repository = "https://github.com/ionide/tree-sitter-fsharp"
 commit = "f29605148f24199cf4d9c4a203a5debc0cbcc648"
 path = "fsharp"
+
+[[capabilities]]
+kind = "process:exec"
+command = "dotnet"
+args = ["*"]
