@@ -56,6 +56,19 @@
       (identifier) @name))) @item
  (#set! "kind" "function"))
 
+; ; Value definitions (let bindings)
+; ((value_declaration
+;   (function_or_value_defn
+;     (value_declaration_left
+;       (identifier_pattern
+;         (long_identifier
+;           (identifier) @name))))) @item
+;  (#set! "kind" "variable"))
+; Function bindings
+(function_or_value_defn
+  (function_declaration_left
+    .
+    (identifier) @name)) @item
 
 ; Member definitions - methods and properties
 ((member_defn
