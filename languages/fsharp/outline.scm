@@ -2,14 +2,14 @@
 ;; Modules & Namespaces
 ;; ============================================================================
 
-((namespace
-  name: (long_identifier) @name) @item
- (#set! "kind" "namespace"))
-
-((named_module
-  name: (long_identifier) @name) @item
- (#set! "kind" "module"))
-
+;; ((namespace
+;;   name: (long_identifier) @name) @item
+;;  (#set! "kind" "namespace"))
+;;
+;; ((named_module
+;;   name: (long_identifier) @name) @item
+;;  (#set! "kind" "module"))
+;;
 ((module_defn
   (identifier) @name) @item
  (#set! "kind" "module"))
@@ -29,15 +29,10 @@
 ;; Class Methods & Properties
 ;; ============================================================================
 
-;; Standard methods and properties (member x.MyMethod)
+;; Standard methods and properties (member self.MyMethod or member MyMethod)
 ((member_defn
   (method_or_prop_defn
-    name: (property_or_ident
-      [
-        method: (identifier) @name
-        (identifier) @name
-        (op_identifier) @name
-      ]))) @item
+    name: (property_or_ident) @name)) @item
  (#set! "kind" "method"))
 
 ;; Abstract methods (abstract member MyMethod)
@@ -47,8 +42,8 @@
  (#set! "kind" "method"))
 
 ;; Union / Enum Cases
-((union_type_case (identifier) @name) @item (#set! "kind" "variant"))
-((enum_type_case (identifier) @name) @item (#set! "kind" "variant"))
+;; ((union_type_case (identifier) @name) @item (#set! "kind" "variant"))
+;; ((enum_type_case (identifier) @name) @item (#set! "kind" "variant"))
 
 ;; ============================================================================
 ;; Top-Level & Module-Level Functions
