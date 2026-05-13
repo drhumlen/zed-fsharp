@@ -11,8 +11,8 @@
 
 (const
   [
-   (_) @constant
-   (unit) @constant.builtin
+    (_) @constant
+    (unit) @constant.builtin
   ])
 
 (primary_constr_args (_) @variable.parameter)
@@ -24,7 +24,7 @@
  (#match? @character.special "^\_.*"))
 
 ;; ----------------------------------------------------------------------------
-;; Punctuation
+;; Punctuation & Types
 
 (type_name type_name: (_) @type.definition)
 
@@ -62,8 +62,10 @@
 (optional_pattern
   "?" @character.special)
 
-(fsi_directive_decl . (string) @module)
+;; ----------------------------------------------------------------------------
+;; Modules & Namespaces
 
+(fsi_directive_decl . (string) @module)
 (import_decl . (_) @module)
 (named_module
   name: (_) @module)
@@ -87,8 +89,8 @@
 
 (value_declaration_left . (_) @variable)
 
-(function_declaration_left
-  . (_) @function)
+;; ----------------------------------------------------------------------------
+;; Functions & Invocations
 
 ;; 1. Function Definitions (let twice, let privateTwice)
 (function_declaration_left
@@ -107,7 +109,7 @@
   ] . (_)
 )
 
-;; 3. Forward Pipelines (|>)
+;; 3. Forward Pipelines (|>, ||>, |||>)
 (infix_expression
   (_)
   (infix_op) @_op
@@ -118,7 +120,7 @@
   (#match? @_op "^\\|{1,3}>$")
 )
 
-;; 4. Backward Pipelines (<|)
+;; 4. Backward Pipelines (<|, <||, <|||)
 (infix_expression
   [
     (long_identifier_or_op) @function.call
@@ -130,6 +132,7 @@
 )
 
 (argument_patterns) @variable.parameter
+
 (typed_pattern
   (_pattern) @variable.parameter
   (_type) @type)
@@ -150,42 +153,8 @@
   .
   (_))
 
-(application_expression
-  .
-  (_) @function.call
-  .
-  (_)? @variable)
-
-(application_expression
-    (dot_expression base: (_) @variable.member . field: (_) @function.call)
-  )
-(application_expression
-    (typed_expression
-      (dot_expression base: (_) @variable.member . field: (_) @function.call)
-      )
-  )
-
-((infix_expression
-  .
-  (long_identifier_or_op) @variable
-  .
-  (infix_op) @operator
-  .
-  (_) @function.call
-  )
- (#eq? @operator "|>")
- )
-
-((infix_expression
-  .
-  (_) @function.call
-  .
-  (infix_op) @operator
-  .
-  (_)
-  )
- (#eq? @operator "<|")
- )
+;; ----------------------------------------------------------------------------
+;; Numbers & Primitives
 
 [
   (xint)
@@ -215,6 +184,9 @@
   (verbatim_string)
   (char)
 ] @string)
+
+;; ----------------------------------------------------------------------------
+;; Keywords & Operators
 
 (compiler_directive_decl) @keyword.directive
 
@@ -313,7 +285,6 @@
   "to"
 ] @keyword.repeat
 
-
 [
   "open"
   "#r"
@@ -348,7 +319,7 @@
   "and"
   "class"
   "struct"
-] @keyword ;.type
+] @keyword
 
 ((identifier) @keyword.exception
  (#any-of? @keyword.exception "failwith" "failwithf" "raise" "reraise"))
@@ -389,10 +360,6 @@
     "finally"
   ] @keyword.exception)
 
-; ((_type
-;   (long_identifier (identifier) @type.builtin))
-;  (#any-of? @type.builtin "bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint" "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit"))
-
 (preproc_if
   [
     "#if" @keyword.directive
@@ -408,9 +375,7 @@
   .
   (identifier)))
 
-; ((identifier) @module.builtin
-;  (#any-of? @module.builtin "Array" "Async" "Directory" "File" "List" "Option" "Path" "Map" "Set" "Lazy" "Seq" "Task" "String" "Result" ))
-
+;; Literal attribute highlighting
 ((value_declaration
    (attributes
      (attribute
