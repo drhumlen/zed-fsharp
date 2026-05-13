@@ -90,6 +90,45 @@
 (function_declaration_left
   . (_) @function)
 
+;; 1. Function Definitions (let twice, let privateTwice)
+(function_declaration_left
+  (access_modifier)?
+  [
+    (identifier) @function.method
+    (op_identifier) @function.method
+  ])
+
+;; 2. Standard Function Invocations (List.map x)
+(application_expression
+  [
+    (long_identifier_or_op) @function.call
+    (dot_expression
+      field: (long_identifier_or_op) @function.call)
+  ] . (_)
+)
+
+;; 3. Forward Pipelines (|>)
+(infix_expression
+  (_)
+  (infix_op) @_op
+  [
+    (long_identifier_or_op) @function.call
+    (dot_expression field: (long_identifier_or_op) @function.call)
+  ]
+  (#match? @_op "^\\|{1,3}>$")
+)
+
+;; 4. Backward Pipelines (<|)
+(infix_expression
+  [
+    (long_identifier_or_op) @function.call
+    (dot_expression field: (long_identifier_or_op) @function.call)
+  ]
+  (infix_op) @_op
+  (_)
+  (#match? @_op "^<\\|{1,3}$")
+)
+
 (argument_patterns) @variable.parameter
 (typed_pattern
   (_pattern) @variable.parameter
