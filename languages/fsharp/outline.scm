@@ -1,87 +1,118 @@
-; Namespaces
+;; ============================================================================
+;; Modules & Namespaces
+;; ============================================================================
+
 ((namespace
   name: (long_identifier) @name) @item
  (#set! "kind" "namespace"))
 
-; Named modules
 ((named_module
   name: (long_identifier) @name) @item
  (#set! "kind" "module"))
 
-; Module definitions
 ((module_defn
   (identifier) @name) @item
  (#set! "kind" "module"))
 
-; Type definitions - Record types
-((type_definition
-  (record_type_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "struct"))
+;; ============================================================================
+;; Types & Classes
+;; ============================================================================
 
-; Type definitions - Union types
-((type_definition
-  (union_type_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "enum"))
+((type_definition (record_type_defn (type_name (identifier) @name))) @item (#set! "kind" "struct"))
+((type_definition (union_type_defn (type_name (identifier) @name))) @item (#set! "kind" "enum"))
+((type_definition (enum_type_defn (type_name (identifier) @name))) @item (#set! "kind" "enum"))
+((type_definition (anon_type_defn (type_name (identifier) @name))) @item (#set! "kind" "class"))
+((type_definition (type_abbrev_defn (type_name (identifier) @name))) @item (#set! "kind" "type"))
+((type_definition (delegate_type_defn (type_name (identifier) @name))) @item (#set! "kind" "interface"))
 
-; Type definitions - Enum types
-((type_definition
-  (enum_type_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "enum"))
+;; ============================================================================
+;; Class Methods & Properties
+;; ============================================================================
 
-; Type definitions - Anonymous types (classes/interfaces)
-((type_definition
-  (anon_type_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "class"))
+;; Standard methods and properties (member x.MyMethod)
+((member_defn
+  (method_or_prop_defn
+    name: (property_or_ident
+      [
+        method: (identifier) @name
+        (identifier) @name
+        (op_identifier) @name
+      ]))) @item
+ (#set! "kind" "method"))
 
-; Type definitions - Type abbreviations
-((type_definition
-  (type_abbrev_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "type"))
-
-; Type definitions - Delegate types
-((type_definition
-  (delegate_type_defn
-    (type_name (identifier) @name))) @item
- (#set! "kind" "interface"))
-
-; Function definitions (let bindings)
-((value_declaration
-  (function_or_value_defn
-    (function_declaration_left
-      (identifier) @name))) @item
- (#set! "kind" "function"))
-
-; ; Value definitions (let bindings)
-; ((value_declaration
-;   (function_or_value_defn
-;     (value_declaration_left
-;       (identifier_pattern
-;         (long_identifier
-;           (identifier) @name))))) @item
-;  (#set! "kind" "variable"))
-; Function bindings
-(function_or_value_defn
-  (function_declaration_left
-    .
-    (identifier) @name)) @item
-
-; Member definitions - methods and properties
+;; Abstract methods (abstract member MyMethod)
 ((member_defn
   (member_signature
     (identifier) @name)) @item
  (#set! "kind" "method"))
 
-; Union type cases
-((union_type_case
-  (identifier) @name) @item
- (#set! "kind" "variant"))
+;; Union / Enum Cases
+((union_type_case (identifier) @name) @item (#set! "kind" "variant"))
+((enum_type_case (identifier) @name) @item (#set! "kind" "variant"))
 
-; Enum type cases
-((enum_type_case
-  (identifier) @name) @item
- (#set! "kind" "variant"))
+;; ============================================================================
+;; Top-Level & Module-Level Functions
+;; ============================================================================
+;; We strictly scope these to File/Namespace/Module parents to avoid picking
+;; up internal/local helper functions declared inside other expressions.
+;; F# Tree-sitter can alias top-level bindings, so we check both node types.
+
+((file
+  [
+    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+  ])
+ (#set! "kind" "function"))
+
+((namespace
+  [
+    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+  ])
+ (#set! "kind" "function"))
+
+((named_module
+  [
+    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+  ])
+ (#set! "kind" "function"))
+
+((module_defn
+  [
+    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
+  ])
+ (#set! "kind" "function"))
+
+;; ============================================================================
+;; Top-Level Variables
+;; ============================================================================
+
+((file
+  [
+    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+  ])
+ (#set! "kind" "variable"))
+
+((namespace
+  [
+    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+  ])
+ (#set! "kind" "variable"))
+
+((named_module
+  [
+    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+  ])
+ (#set! "kind" "variable"))
+
+((module_defn
+  [
+    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
+  ])
+ (#set! "kind" "variable"))
