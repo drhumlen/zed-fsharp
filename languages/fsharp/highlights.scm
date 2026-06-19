@@ -359,13 +359,7 @@
     "finally"
   ] @keyword.exception)
 
-((type
-  (long_identifier (identifier) @type.builtin))
- (#any-of? @type.builtin "bool" "byte" "sbyte" "int16" "uint16" "int" "uint" "int64" "uint64" "nativeint" "unativeint" "decimal" "float" "double" "float32" "single" "char" "string" "unit"))
-
 (const
-  (unit) @punctuation.bracket)
-(const_pattern
   (unit) @punctuation.bracket)
 
 (preproc_if
