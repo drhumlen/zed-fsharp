@@ -5,6 +5,7 @@ let calculateTotal items =
     items
     |> List.sumBy _.Price
 
+[<Literal>]
 let answer = 42
 
 let totalWithDiscount rate items =

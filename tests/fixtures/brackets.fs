@@ -25,7 +25,7 @@ let describePayment payment =
     | Invoice -> "Invoice"
 
 type ICalculator =
-    abstract member Calculate: Order -> decimal
+    abstract Calculate: Order -> decimal
 
 type Calculator(discount: decimal) =
     member _.Calculate order =

@@ -378,10 +378,10 @@
   (identifier)))
 
 ;; Literal attribute highlighting
-((value_declaration
+((declaration_expression
    (attributes
      (attribute
-       (_type
+       (simple_type
          (long_identifier
            (identifier) @attribute))))
    (function_or_value_defn
