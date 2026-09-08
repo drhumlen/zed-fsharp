@@ -218,7 +218,7 @@
   [
     "{"
     "}"
-  ] @punctuation.special)
+  ] @punctuation.special) @embedded
 
 [
   ","

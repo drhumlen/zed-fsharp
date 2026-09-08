@@ -15,6 +15,8 @@ tree-sitter parse ../../../tests/fixtures/indentation.fs
 tree-sitter query ../../../languages/fsharp/indents.scm ../../../tests/fixtures/indentation.fs
 tree-sitter parse ../../../tests/fixtures/computation_expressions.fs
 tree-sitter query ../../../languages/fsharp/highlights.scm ../../../tests/fixtures/computation_expressions.fs
+tree-sitter parse ../../../tests/fixtures/interpolated_strings.fs
+tree-sitter query ../../../languages/fsharp/highlights.scm ../../../tests/fixtures/interpolated_strings.fs
 tree-sitter parse ../../../tests/fixtures/textobjects.fs
 tree-sitter query ../../../languages/fsharp/textobjects.scm ../../../tests/fixtures/textobjects.fs
 tree-sitter parse ../../../tests/fixtures/textobjects_namespace.fs
@@ -32,6 +34,8 @@ tree-sitter query ../../../languages/fsharp/textobjects.scm ../../../tests/fixtu
 
 Expected behavior:
 
+- Interpolated string contents remain strings, interpolation braces are special
+  punctuation, and expressions inside the braces use ordinary F# highlighting.
 - Parameterized lets, including local functions, have function-around and body
   captures. `answer` has neither. Local function-around excludes the following
   expression that uses the local function.
