@@ -14,6 +14,9 @@
 ("{|" @open
   "|}" @close)
 
+("[<" @open
+  ">]" @close)
+
 ; F# block forms represented by explicit paired keywords.
 (begin_end_expression
   "begin" @open

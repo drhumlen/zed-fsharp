@@ -21,7 +21,10 @@ struct FsAutocompleteInitOptions {
 
 fn get_custom_args(settings_object: Option<&Map<String, Value>>) -> Vec<String> {
     if let Some(args) = settings_object
-        .and_then(|s| s.get("fsac_custom_args"))
+        .and_then(|s| {
+            s.get("fsac_custom_arguments")
+                .or_else(|| s.get("fsac_custom_args"))
+        })
         .and_then(|v| v.as_array())
     {
         args.iter()
@@ -135,3 +138,36 @@ impl zed::Extension for FsharpExtension {
 }
 
 zed::register_extension!(FsharpExtension);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn custom_arguments_use_documented_setting() {
+        let settings = serde_json::json!({
+            "fsac_custom_arguments": ["--verbose", "value with spaces"],
+            "fsac_custom_args": ["--legacy"]
+        });
+        assert_eq!(
+            get_custom_args(settings.as_object()),
+            vec!["--verbose", "value with spaces"]
+        );
+    }
+
+    #[test]
+    fn custom_arguments_preserve_legacy_setting() {
+        let settings = serde_json::json!({ "fsac_custom_args": ["--verbose"] });
+        assert_eq!(get_custom_args(settings.as_object()), vec!["--verbose"]);
+    }
+
+    #[test]
+    fn empty_documented_arguments_override_legacy_setting() {
+        let settings = serde_json::json!({
+            "fsac_custom_arguments": [],
+            "fsac_custom_args": ["--legacy"]
+        });
+        assert!(get_custom_args(settings.as_object()).is_empty());
+        assert!(get_custom_args(None).is_empty());
+    }
+}

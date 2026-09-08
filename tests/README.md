@@ -16,6 +16,8 @@ tree-sitter query ../../../languages/fsharp/brackets.scm ../../../tests/fixtures
 tree-sitter query ../../../languages/fsharp/textobjects.scm ../../../tests/fixtures/brackets.fs
 tree-sitter parse ../../../tests/fixtures/explicit_delimiters.fs
 tree-sitter query ../../../languages/fsharp/brackets.scm ../../../tests/fixtures/explicit_delimiters.fs
+tree-sitter parse ../../../tests/fixtures/editing.fs
+tree-sitter query ../../../languages/fsharp/brackets.scm ../../../tests/fixtures/editing.fs
 ```
 
 Expected behavior:
@@ -52,3 +54,17 @@ Implemented properties are intentionally included as function targets. A
 value bound to a lambda has no parameterized declaration and is excluded.
 Mutually recursive `let rec ... and ...` and `type ... and ...` declarations
 share outer grammar nodes, so their around objects cover the entire group.
+
+## Editing checks
+
+In a scratch F# buffer, type `[|`, `{|`, and `[<`: extending an auto-closed
+`[]` or `{}` should not insert a second closing delimiter. Complete the compound
+closing delimiter manually. Use Zed's block-comment command on a selection and
+check that it wraps with `(* ... *)`. C-style `/* ... */` is no longer configured.
+Typing `'T` or `value'` should not insert another apostrophe. Character literals
+still work, but their closing apostrophe is typed manually.
+Use `%` on both attribute sets in `editing.fs` to check `[< ... >]` matching.
+
+The documented `fsac_custom_arguments` setting now takes precedence over the
+legacy `fsac_custom_args` spelling, including when explicitly set to `[]`.
+Argument-setting behavior is covered by `cargo test`.
