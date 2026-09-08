@@ -108,6 +108,19 @@
   ] . (_)
 )
 
+;; Infix and application expressions have equal grammar precedence, so the
+;; right-hand callee in `max 1 2 + min 3 4` is nested under the infix node.
+(application_expression
+  (infix_expression
+    (_)
+    (infix_op)
+    [
+      (long_identifier_or_op) @function.call
+      (dot_expression
+        field: (long_identifier_or_op) @function.call)
+    ])
+  . (_))
+
 ;; 3. Forward Pipelines (|>, ||>, |||>)
 (infix_expression
   (_)
