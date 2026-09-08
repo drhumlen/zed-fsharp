@@ -3,10 +3,16 @@
 These fixtures exercise the grammar pinned in `extension.toml`. They are
 parser/query examples, not a compilable F# project.
 
+`computation_expressions.fs` covers applicative bindings: `let!` and both `and!`
+tokens must capture as `@keyword.function`. The same text in the comment and
+string must not receive that keyword capture.
+
 With that grammar checked out at `grammars/fsharp` and Tree-sitter CLI installed,
 run from `grammars/fsharp/fsharp`:
 
 ```sh
+tree-sitter parse ../../../tests/fixtures/computation_expressions.fs
+tree-sitter query ../../../languages/fsharp/highlights.scm ../../../tests/fixtures/computation_expressions.fs
 tree-sitter parse ../../../tests/fixtures/textobjects.fs
 tree-sitter query ../../../languages/fsharp/textobjects.scm ../../../tests/fixtures/textobjects.fs
 tree-sitter parse ../../../tests/fixtures/textobjects_namespace.fs
@@ -18,6 +24,8 @@ tree-sitter parse ../../../tests/fixtures/explicit_delimiters.fs
 tree-sitter query ../../../languages/fsharp/brackets.scm ../../../tests/fixtures/explicit_delimiters.fs
 tree-sitter parse ../../../tests/fixtures/editing.fs
 tree-sitter query ../../../languages/fsharp/brackets.scm ../../../tests/fixtures/editing.fs
+tree-sitter parse ../../../tests/fixtures/lambdas.fs
+tree-sitter query ../../../languages/fsharp/textobjects.scm ../../../tests/fixtures/lambdas.fs
 ```
 
 Expected behavior:
@@ -51,7 +59,8 @@ type bodies, and `do/done` are covered separately in `explicit_delimiters.fs`.
 
 Limitations: file modules and namespaces currently have around captures only.
 Implemented properties are intentionally included as function targets. A
-value bound to a lambda has no parameterized declaration and is excluded.
+value bound to a lambda has no parameterized declaration: its anonymous function
+is captured, but the surrounding `let name =` is excluded.
 Mutually recursive `let rec ... and ...` and `type ... and ...` declarations
 share outer grammar nodes, so their around objects cover the entire group.
 
@@ -68,3 +77,12 @@ Use `%` on both attribute sets in `editing.fs` to check `[< ... >]` matching.
 The documented `fsac_custom_arguments` setting now takes precedence over the
 legacy `fsac_custom_args` spelling, including when explicitly set to `[]`.
 Argument-setting behavior is covered by `cargo test`.
+
+## Anonymous function objects
+
+In `lambdas.fs`, put the cursor on `value + 1`: `vaf` selects
+`fun value -> value + 1`, and `vif` selects `value + 1`. In the nested filter
+callback, `vif` selects only `value > 0`. Inside a `function` expression, `vaf`
+includes `function` and all cases, while `vif` selects just the cases. Surrounding
+call parentheses and the `let describe =` binding are excluded. The plain
+`answer` binding must not receive a function capture.

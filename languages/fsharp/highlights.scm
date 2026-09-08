@@ -305,6 +305,7 @@
 [
   "let"
   "let!"
+  "and!"
   "use"
   "use!"
   "member"

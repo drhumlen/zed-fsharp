@@ -7,6 +7,14 @@
   (function_declaration_left)
   body: (_) @function.inside) @function.around
 
+; Anonymous callbacks select the expression itself, excluding surrounding
+; application parentheses or the value binding that contains it.
+(fun_expression
+  (_expression) @function.inside) @function.around
+
+(function_expression
+  (rules) @function.inside) @function.around
+
 ; `member_defn` covers instance members, static members, overrides, defaults,
 ; and property-like members. Include implemented properties as useful
 ; navigation targets alongside methods.
