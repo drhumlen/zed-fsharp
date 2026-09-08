@@ -11,6 +11,8 @@ With that grammar checked out at `grammars/fsharp` and Tree-sitter CLI installed
 run from `grammars/fsharp/fsharp`:
 
 ```sh
+tree-sitter parse ../../../tests/fixtures/indentation.fs
+tree-sitter query ../../../languages/fsharp/indents.scm ../../../tests/fixtures/indentation.fs
 tree-sitter parse ../../../tests/fixtures/computation_expressions.fs
 tree-sitter query ../../../languages/fsharp/highlights.scm ../../../tests/fixtures/computation_expressions.fs
 tree-sitter parse ../../../tests/fixtures/textobjects.fs
