@@ -736,6 +736,8 @@
   [
     (long_identifier . (identifier) (identifier) @function .)
     (dot_expression member: (identifier) @function)
+    (type_application_expression
+      (long_identifier . (identifier) (identifier) @function .))
   ])
 
 ; Type name in new expressions (not wrapped in type_expression so needs its own capture)
