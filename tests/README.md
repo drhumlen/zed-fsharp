@@ -3,9 +3,9 @@
 These fixtures exercise the grammar pinned in `extension.toml`. They are
 parser/query examples, not a compilable F# project.
 
-`computation_expressions.fs` covers applicative bindings: `let!` and both `and!`
-tokens must capture as `@keyword.function`. The same text in the comment and
-string must not receive that keyword capture.
+`computation_expressions.fs` covers computation expression keywords: `let!`,
+both `and!` tokens, and `while!` must capture as `@keyword.function`. The same
+text in the comment and string must not receive that keyword capture.
 
 With that grammar checked out at `grammars/fsharp` and Tree-sitter CLI installed,
 run from `grammars/fsharp/fsharp`:

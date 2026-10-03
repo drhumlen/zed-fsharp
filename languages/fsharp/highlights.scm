@@ -6,8 +6,8 @@
   (block_comment)
 ] @comment
 
-((line_comment) @comment.documentation
- (#match? @comment.documentation "^///"))
+((line_comment) @comment @comment.doc
+ (#match? @comment.doc "^///"))
 
 (const
   [
@@ -319,6 +319,7 @@
   "let"
   "let!"
   "and!"
+  "while!"
   "use"
   "use!"
   "member"
