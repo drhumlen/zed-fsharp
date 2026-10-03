@@ -1,77 +1,79 @@
-; Functions
+; F# text-object queries for Helix.
 ;
-; A `function_or_value_defn` uses `function_declaration_left` only when the
-; binding has one or more argument patterns. Plain value bindings instead use
-; `value_declaration_left`, so they are deliberately excluded here.
-(function_or_value_defn
-  (function_declaration_left)
-  body: (_) @function.inside) @function.around
+; Helix surfaces these as `mif`/`maf` (function), `mit`/`mat` (type),
+; `mia`/`maa` (argument), `mic`/`mac` (comment) — `mi…` for "inside",
+; `ma…` for "around".
+;
+; `.inside` captures use the `body:` field where the grammar exposes it.
+; Rules without a body field (`type_decl`, `type_and_decl`) fall back to
+; positional anchoring (`"=" . (_)`).
 
-; Anonymous callbacks select the expression itself, excluding surrounding
-; application parentheses or the value binding that contains it.
-(fun_expression
-  (_expression) @function.inside) @function.around
+; ── Functions ────────────────────────────────────────────────────────────────
+; let foo x = body
+(let_binding body: (_) @function.inside) @function.around
 
-(function_expression
-  (rules) @function.inside) @function.around
+; Nested `let foo = body` inside an enclosing expression
+(let_decl_indented body: (_) @function.inside) @function.around
 
-; `member_defn` covers instance members, static members, overrides, defaults,
-; and property-like members. Include implemented properties as useful
-; navigation targets alongside methods.
-(member_defn
-  (method_or_prop_defn)) @function.around
+; `and foo = body` (mutual-recursion continuation)
+(let_and_binding body: (_) @function.inside) @function.around
 
-; In the generated parser, method implementation expressions are direct
-; `_expression` children. This excludes the `args` pattern fields.
-(method_or_prop_defn
-  (_expression) @function.inside)
+; member this.Foo x = body  /  static member Foo x = body  /
+; member val Auto = expr [with get [, set]]
+(member_defn body: (_) @function.inside) @function.around
 
-(property_accessor
-  (_expression) @function.inside)
+; abstract member Foo: int  — no body, so no .inside
+(abstract_member_defn) @function.around
 
-; Abstract members have no implementation body, but are still useful
-; function-motion targets.
-(member_defn
-  (member_signature)) @function.around
+; with get () = body  /  with set v = body
+(property_accessor body: (_) @function.inside) @function.around
 
-; Classes, records, unions, interfaces, aliases, delegates, enums, and type
-; extensions are all represented by `type_definition` at the structural level.
-(type_definition) @class.around
+; new (args) = body [then expr]
+(secondary_constructor body: (_) @function.inside) @function.around
 
-(record_type_defn
-  block: (record_fields) @class.inside)
+; fun x -> body
+(lambda_expression body: (_) @function.inside) @function.around
 
-(union_type_defn
-  (union_type_cases) @class.inside)
+; function | pat -> expr | pat -> expr  — body is a list of arms, capture as a whole
+(function_expression) @function.around
 
-(enum_type_defn
-  (enum_type_cases) @class.inside)
+; ── Types / classes ──────────────────────────────────────────────────────────
+; `type Foo = record/union/etc.` — body is whatever follows `=`.
+(type_decl
+  "=" . (_) @class.inside) @class.around
 
-(anon_type_defn
-  "="
-  ["begin" "class" "struct"]?
-  (_)* @class.inside)
+; Same shape for `and Foo = …`
+(type_and_decl
+  "=" . (_) @class.inside) @class.around
 
-(interface_type_defn
-  "interface"
-  (_)* @class.inside)
+; `type Foo with` — member impls follow as siblings; only @around is meaningful.
+(type_extension) @class.around
 
-(type_extension
-  (type_extension_elements) @class.inside)
+; exception Foo of …
+(exception_decl) @class.around
 
-; Modules and namespaces are structural units too. `module_defn` has a block
-; field; file-scoped modules and namespaces expose their contents as children.
-; Keep body captures in one match so Zed joins them into one inside range.
-; Module separators are anonymous `;` tokens, including indentation newlines.
-(module_defn
-  "="
-  [(_) ";"]* @class.inside) @class.around
+; Explicit block bodies — selecting the block as its own @class is useful when
+; you want to grab just the class/struct/interface body in `type Foo = class … end`.
+(class_type_defn) @class.around
+(struct_type_defn) @class.around
+(interface_type_defn) @class.around
 
-(named_module) @class.around
+; ── Arguments / parameters ───────────────────────────────────────────────────
+; Curried parameters (`x`, `(x: int)`, destructuring forms…) and OOP-style
+; tuple parameters (`x: int` inside `(x: int, y: int)`).
+(parameter) @parameter.inside @parameter.around
+(tuple_param) @parameter.inside @parameter.around
 
-(namespace) @class.around
+; ── Comments ─────────────────────────────────────────────────────────────────
+[
+  (line_comment)
+  (xml_doc_comment)
+  (block_comment)
+  (block_doc_comment)
+] @comment.inside @comment.around
 
-; Comments
-(line_comment)+ @comment.around
-
-(block_comment) @comment.around
+; Note: there is no query-level way to make `maf` / `mat` extend over an
+; adjacent doc comment or attribute from inside the function body. Captures
+; bound ranges, and tree-sitter queries can't union them across siblings.
+; The fix is grammar-level (make the comment/attribute a child of the decl).
+; See LIMITATIONS.md.

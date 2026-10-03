@@ -1,113 +1,58 @@
-;; ============================================================================
-;; Modules & Namespaces
-;; ============================================================================
+; Zed outline query — powers the outline panel, breadcrumbs, and in-file
+; symbol search. `let_binding` only matches declaration-position lets
+; (module/class level); local lets are `let_decl_indented`, deliberately
+; excluded to keep the outline at API altitude.
 
-;; ((namespace
-;;   name: (long_identifier) @name) @item
-;;  (#set! "kind" "namespace"))
-;;
-;; ((named_module
-;;   name: (long_identifier) @name) @item
-;;  (#set! "kind" "module"))
-;;
-((module_defn
-  (identifier) @name) @item
- (#set! "kind" "module"))
+(xml_doc_comment) @annotation
+(block_doc_comment) @annotation
 
-;; ============================================================================
-;; Types & Classes
-;; ============================================================================
+(namespace_decl
+  "namespace" @context
+  name: (long_identifier) @name) @item
 
-((type_definition (record_type_defn (type_name (identifier) @name))) @item (#set! "kind" "struct"))
-((type_definition (union_type_defn (type_name (identifier) @name))) @item (#set! "kind" "enum"))
-((type_definition (enum_type_defn (type_name (identifier) @name))) @item (#set! "kind" "enum"))
-((type_definition (anon_type_defn (type_name (identifier) @name))) @item (#set! "kind" "class"))
-((type_definition (type_abbrev_defn (type_name (identifier) @name))) @item (#set! "kind" "type"))
-((type_definition (delegate_type_defn (type_name (identifier) @name))) @item (#set! "kind" "interface"))
+(module_decl
+  "module" @context
+  name: (long_identifier) @name) @item
 
-;; ============================================================================
-;; Class Methods & Properties
-;; ============================================================================
+(type_decl
+  "type" @context
+  name: (identifier) @name) @item
 
-;; Standard methods and properties (member self.MyMethod or member MyMethod)
-((member_defn
-  (method_or_prop_defn
-    name: (property_or_ident) @name)) @item
- (#set! "kind" "method"))
+(type_and_decl
+  "and" @context
+  name: (identifier) @name) @item
 
-;; Abstract methods (abstract member MyMethod)
-((member_defn
-  (member_signature
-    (identifier) @name)) @item
- (#set! "kind" "method"))
+(exception_decl
+  "exception" @context
+  name: (identifier) @name) @item
 
-;; Union / Enum Cases
-;; ((union_type_case (identifier) @name) @item (#set! "kind" "variant"))
-;; ((enum_type_case (identifier) @name) @item (#set! "kind" "variant"))
+(union_case
+  name: (identifier) @name) @item
 
-;; ============================================================================
-;; Top-Level & Module-Level Functions
-;; ============================================================================
-;; We strictly scope these to File/Namespace/Module parents to avoid picking
-;; up internal/local helper functions declared inside other expressions.
-;; F# Tree-sitter can alias top-level bindings, so we check both node types.
+(enum_case
+  name: (identifier) @name) @item
 
-((file
-  [
-    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-  ])
- (#set! "kind" "function"))
+(record_type_field
+  name: (identifier) @name) @item
 
-((namespace
-  [
-    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-  ])
- (#set! "kind" "function"))
+(let_binding
+  "let" @context
+  "rec"? @context
+  name: [(identifier) (operator_name) (active_pattern_name)] @name) @item
 
-((named_module
-  [
-    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-  ])
- (#set! "kind" "function"))
+(let_and_binding
+  "and" @context
+  name: (identifier) @name) @item
 
-((module_defn
-  [
-    (declaration_expression (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-    (value_declaration (function_or_value_defn (function_declaration_left [ (identifier) @name (op_identifier) @name ]))) @item
-  ])
- (#set! "kind" "function"))
+(member_defn
+  "static"? @context
+  ["member" "override" "default"] @context
+  name: (identifier) @name) @item
 
-;; ============================================================================
-;; Top-Level Variables
-;; ============================================================================
+(abstract_member_defn
+  "abstract" @context
+  name: (identifier) @name) @item
 
-((file
-  [
-    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-  ])
- (#set! "kind" "variable"))
-
-((namespace
-  [
-    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-  ])
- (#set! "kind" "variable"))
-
-((named_module
-  [
-    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-  ])
- (#set! "kind" "variable"))
-
-((module_defn
-  [
-    (declaration_expression (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-    (value_declaration (function_or_value_defn (value_declaration_left (identifier_pattern (long_identifier_or_op) @name)))) @item
-  ])
- (#set! "kind" "variable"))
+(val_field
+  "val" @context
+  name: (identifier) @name) @item
