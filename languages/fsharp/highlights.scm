@@ -742,13 +742,13 @@
 
 ; Computation expression builder name (async, task, seq, promise, …)
 (computation_expression
-  builder: (long_identifier) @keyword)
+  builder: (long_identifier (identifier) @keyword .))
 
 ; Oxpecker element-DSL builder (`div() { … }`) — the form WITH an `args` field is a
 ; function application (an HTML/element tag), not a CE keyword. Placed after the
 ; rule above so last-match-in-source-order recolours it from @keyword to @function.
 (computation_expression
-  builder: (long_identifier) @function
+  builder: (long_identifier (identifier) @function .)
   args: _)
 
 ; Element-DSL named arguments (HTML attributes / props): the left operand of a
