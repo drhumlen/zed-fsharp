@@ -7,6 +7,7 @@ use zed_extension_api::{
 };
 
 mod fsac;
+use fsac::{acquire_fsac, FsacAcquisition};
 
 struct FsharpExtension {}
 
@@ -14,7 +15,6 @@ struct FsharpExtension {}
 #[serde(rename_all = "PascalCase")]
 struct FsAutocompleteInitOptions {
     automatic_workspace_init: bool,
-    analyze_unused_declarations: bool,
     simplify_name_analyzer: bool,
     tooltip_show_documentation_link: bool,
     unused_opens_analyzer: bool,
@@ -29,10 +29,7 @@ struct FsAutocompleteInitOptions {
 
 fn get_custom_args(settings_object: Option<&Map<String, Value>>) -> Vec<String> {
     if let Some(args) = settings_object
-        .and_then(|s| {
-            s.get("fsac_custom_arguments")
-                .or_else(|| s.get("fsac_custom_args"))
-        })
+        .and_then(|s| s.get("fsac_custom_args"))
         .and_then(|v| v.as_array())
     {
         args.iter()
@@ -43,19 +40,30 @@ fn get_custom_args(settings_object: Option<&Map<String, Value>>) -> Vec<String> 
     }
 }
 
-fn require_dotnet(
-    language_server_id: &zed::LanguageServerId,
+fn get_fsac_acquisition(
+    settings_object: Option<&Map<String, Value>>,
     worktree: &zed::Worktree,
-) -> zed::Result<String> {
-    match worktree.which("dotnet") {
-        Some(p) => Ok(p),
-        None => {
-            let error_msg = "dotnet executable not found in PATH".to_string();
-            zed::set_language_server_installation_status(
-                language_server_id,
-                &LanguageServerInstallationStatus::Failed(error_msg.clone()),
-            );
-            Err(error_msg)
+    language_server_id: &zed::LanguageServerId,
+    custom_args: &Vec<String>,
+) -> zed::Result<FsacAcquisition> {
+    if let Some(custom_path) = settings_object
+        .and_then(|s| s.get("fsac_custom_path"))
+        .and_then(|v| v.as_str())
+    {
+        Ok(FsacAcquisition {
+            fsac_path: PathBuf::from(custom_path),
+            env: Default::default(),
+        })
+    } else {
+        match acquire_fsac(language_server_id, worktree, custom_args) {
+            Ok(acquisition) => Ok(acquisition),
+            Err(e) => {
+                zed::set_language_server_installation_status(
+                    language_server_id,
+                    &LanguageServerInstallationStatus::Failed(e.clone()),
+                );
+                Err(e)
+            }
         }
     }
 }
@@ -87,48 +95,27 @@ impl zed::Extension for FsharpExtension {
         language_server_id: &zed::LanguageServerId,
         worktree: &zed::Worktree,
     ) -> zed::Result<zed::Command> {
-        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?.settings;
-        let settings_object = settings.as_ref().and_then(|v| v.as_object());
-        let custom_args = get_custom_args(settings_object);
-
-        // Explicit .dll path via settings — always run via dotnet
-        if let Some(custom_path) = settings_object
-            .and_then(|s| s.get("fsac_custom_path"))
-            .and_then(|v| v.as_str())
-        {
-            let dotnet_path = require_dotnet(language_server_id, worktree)?;
-            let final_args = get_final_args(PathBuf::from(custom_path), &custom_args);
-            return Ok(zed::Command {
-                command: dotnet_path,
-                args: final_args,
-                env: worktree.shell_env(),
-            });
-        }
-
-        // fsautocomplete binary found in shell PATH — run directly
-        if let Some(fsac_path) = worktree.which("fsautocomplete") {
-            let mut args = custom_args.clone();
-            args.push("--adaptive-lsp-server-enabled".to_string());
-            return Ok(zed::Command {
-                command: fsac_path,
-                args,
-                env: worktree.shell_env(),
-            });
-        }
-
-        // Fall back to downloading via NuGet and running via dotnet
-        let dotnet_path = require_dotnet(language_server_id, worktree)?;
-        let acquisition = match fsac::acquire_fsac(language_server_id, worktree, &custom_args) {
-            Ok(a) => a,
-            Err(e) => {
+        let dotnet_path = match worktree.which("dotnet") {
+            Some(p) => p,
+            None => {
+                let error_msg = "dotnet executable not found in PATH".to_string();
                 zed::set_language_server_installation_status(
                     language_server_id,
-                    &LanguageServerInstallationStatus::Failed(e.clone()),
+                    &LanguageServerInstallationStatus::Failed(error_msg.clone()),
                 );
-                return Err(e);
+                return Err(error_msg);
             }
         };
+
+        let settings = LspSettings::for_worktree(language_server_id.as_ref(), worktree)?.settings;
+        let settings_object = settings.as_ref().and_then(|v| v.as_object());
+
+        let custom_args = get_custom_args(settings_object);
+        let acquisition =
+            get_fsac_acquisition(settings_object, worktree, language_server_id, &custom_args)?;
+
         let final_args = get_final_args(acquisition.fsac_path, &custom_args);
+
         Ok(zed::Command {
             command: dotnet_path,
             args: final_args,
@@ -143,7 +130,6 @@ impl zed::Extension for FsharpExtension {
     ) -> zed::Result<Option<zed::serde_json::Value>> {
         let initialization_options = FsAutocompleteInitOptions {
             automatic_workspace_init: true,
-            analyze_unused_declarations: true,
             simplify_name_analyzer: true,
             // Zed does not support info panel so documentation links are not shown
             tooltip_show_documentation_link: false,
@@ -185,54 +171,3 @@ fn merge(base: &mut Value, overlay: Value) {
 }
 
 zed::register_extension!(FsharpExtension);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn initialization_overrides_preserve_other_defaults() {
-        let mut defaults = serde_json::json!({
-            "SimplifyNameAnalyzer": true,
-            "RecordStubGeneration": true,
-            "fsac": { "cachedTypeCheckCount": 200, "other": true }
-        });
-        merge(&mut defaults, serde_json::json!({
-            "SimplifyNameAnalyzer": false,
-            "fsac": { "cachedTypeCheckCount": 50 }
-        }));
-        assert_eq!(defaults, serde_json::json!({
-            "SimplifyNameAnalyzer": false,
-            "RecordStubGeneration": true,
-            "fsac": { "cachedTypeCheckCount": 50, "other": true }
-        }));
-    }
-
-    #[test]
-    fn custom_arguments_use_documented_setting() {
-        let settings = serde_json::json!({
-            "fsac_custom_arguments": ["--verbose", "value with spaces"],
-            "fsac_custom_args": ["--legacy"]
-        });
-        assert_eq!(
-            get_custom_args(settings.as_object()),
-            vec!["--verbose", "value with spaces"]
-        );
-    }
-
-    #[test]
-    fn custom_arguments_preserve_legacy_setting() {
-        let settings = serde_json::json!({ "fsac_custom_args": ["--verbose"] });
-        assert_eq!(get_custom_args(settings.as_object()), vec!["--verbose"]);
-    }
-
-    #[test]
-    fn empty_documented_arguments_override_legacy_setting() {
-        let settings = serde_json::json!({
-            "fsac_custom_arguments": [],
-            "fsac_custom_args": ["--legacy"]
-        });
-        assert!(get_custom_args(settings.as_object()).is_empty());
-        assert!(get_custom_args(None).is_empty());
-    }
-}

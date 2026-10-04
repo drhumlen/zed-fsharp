@@ -232,33 +232,28 @@
 
 (let_binding
   name: (identifier) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
 (let_binding
   name: (operator_name) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
 (let_decl_indented
   name: (active_pattern_name) @function)
 
 (let_decl_indented
   name: (identifier) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
 (let_decl_indented
   name: (operator_name) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
 ; `let x = … in …` (explicit-`in` form) puts the binding name directly on
 ; let_expression (not a let_decl_indented child), so it needs its own rule.
 (let_expression
   name: (identifier) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
 ; A lowercase identifier in an `identifier_pattern` is a value BINDING — the
 ; names introduced by `match`/`function`/`fun`/`let` patterns (`Some v`,
@@ -323,12 +318,9 @@
 
 (let_and_binding
   name: (identifier) @function
-  parameters: (parameter
-    (identifier) @variable.parameter)+)
+  parameters: (parameter)+)
 
-(lambda_expression
-  (parameter
-    (identifier) @variable.parameter)*)
+(parameter (identifier) @variable.parameter)
 
 ; `tuple_param` is the per-element parameter shape inside `primary_constructor`
 ; and (via `tuple_params`) `secondary_constructor` — e.g. `type C(x: int, y: int)`
